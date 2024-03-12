@@ -5,15 +5,13 @@ import matplotlib.pyplot as plt
 
 import Antenna
 from cluster import cluster
+from config import Lambda_R, N
 
 
-def non_stationary_channel(inputWaveform, Tx_Ant, Rx_Ant, fc, bw):
+def non_stationary_channel(inputWaveform, Tx_Ant:Antenna, Rx_Ant:Antenna, fc, bw, isLOS: bool):
     # 平面波假设，Tx天线可见所有簇，Rx天线可见簇演进
 
-    # 初始时刻，天线0上可见20簇
-    N = 20  # 初始可见簇
-    Lambda_G = 80  # 簇生成率
-    Lambda_R = 4  # 簇消亡率
+    # 初始时刻，天线0上可见簇
 
     Rx_cluster_set = []
     Ant_cluster_set = []
@@ -23,11 +21,11 @@ def non_stationary_channel(inputWaveform, Tx_Ant, Rx_Ant, fc, bw):
     Rx_cluster_set.append(Ant_cluster_set)
 
     # 初始时刻在天线轴上的演进
-    if Tx_Ant.Ant_type == 'ULA':
+    if Rx_Ant.Ant_type == 'ULA':
         Ds = 10  # 空间相关性参数，由场景决定，可选10，30，50，100
-        P_survival = np.exp(-Lambda_R * Tx_Ant.delta_Ant / Ds)
+        P_survival = np.exp(-Lambda_R * Rx_Ant.delta_Ant / Ds)
 
-        for i in range(1, Tx_Ant.num):
+        for i in range(1, Rx_Ant.num):
             temp = copy.deepcopy(Rx_cluster_set[i - 1])  # 复制列表到内存另一块
             for j in temp:
                 if np.random.rand() < P_survival:
@@ -35,6 +33,8 @@ def non_stationary_channel(inputWaveform, Tx_Ant, Rx_Ant, fc, bw):
                 else:
                     temp.remove(j)
             Rx_cluster_set.append(temp)
+    if Rx_Ant.Ant_type == 'URA':
+        pass
 
     # 画出初始时刻簇在天线轴上的演进
     x_cord = []
@@ -52,5 +52,12 @@ def non_stationary_channel(inputWaveform, Tx_Ant, Rx_Ant, fc, bw):
     plt.show()
 
     # 该时刻下的信道系数
+    # 计算NLOS分量
+    for i in range(Rx_Ant.num):  # 第i个Rx天线对所有Tx天线
+        for j in range(Tx_Ant.num):
+            Clusters = Rx_cluster_set[i]
+
+    if isLOS:
+        pass
 
     return None
