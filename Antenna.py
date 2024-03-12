@@ -1,8 +1,13 @@
 class Antenna:
-    def __init__(self, shape: list, position: list, angles: list,velocity:list, delta_Ant):
-        self.shape = shape
-        self.num = shape[0] * shape[1]
+    def __init__(self, position: list, angles: list, velocity: list,**kwargs):
+        if kwargs['Ant_type'] == 'URA':
+            self.Ant_type = 'URA'
+            self.shape = kwargs['Shape']
+        if kwargs['Ant_type'] == 'ULA':
+            self.Ant_type = 'ULA'
+            self.delta_Ant = kwargs['Delta']
+            self.num = kwargs['Num']
         self.position = position
-        self.delta_Ant = delta_Ant
         self.azimuth = angles[0]
         self.elevation = angles[1]
+        self.velocity = velocity
