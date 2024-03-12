@@ -1,6 +1,7 @@
 import numpy as np
 
 import Antenna
+from config import Rtau, Stau
 
 
 class cluster:
@@ -18,6 +19,11 @@ class cluster:
 
         self.Mn = None
 
+        self.Position_Rx = np.array([])
+        self.Position_Tx = np.array([])
+        self.Position_Mn_Rx = []
+        self.Position_Mn_Tx = []
+
         # 天线设置
         self.Tx_Ant = Tx_Ant
         self.Rx_Ant = Rx_Ant
@@ -28,8 +34,7 @@ class cluster:
 
         #  生成簇时延
         Un = np.random.rand()
-        Rtau = 2.3  # 时延因子 2.3：NLOS城市室外，2.4：NLOS办公室室内
-        Stau = np.power(10, 0.32) * np.random.randn() + np.power(10, -6.63)  # 随机生成时延扩展
+
         self.Delay = -Rtau * Stau * np.log(Un)
 
         #  生成簇平均功率
@@ -42,6 +47,21 @@ class cluster:
         self.Angle.append(0.54 * np.random.randn() + self.Rx_Ant.azimuth)
         self.Angle.append(0.11 * np.random.randn() + self.Rx_Ant.elevation)
 
+        #  生成簇的位置
+        d = np.sqrt((Tx_Ant.position[0] - Rx_Ant.position[0]) ** 2 +
+                    (Tx_Ant.position[1] - Rx_Ant.position[1]) ** 2 +
+                    (Tx_Ant.position[2] - Rx_Ant.position[2]) ** 2)
+        D = np.array([d, 0, 0])
+        self.Position_Rx = (np.sqrt(15) * np.random.randn() + 25) * np.array(
+            [np.cos(self.Angle[3]) * np.cos(self.Angle[2]),
+             np.cos(self.Angle[3]) * np.sin(self.Angle[2]),
+             np.sin(self.Angle[3])]) + D
+
+        self.Position_Tx = (np.sqrt(10) * np.random.randn() + 30) * np.array(
+            [np.cos(self.Angle[1]) * np.cos(self.Angle[0]),
+             np.cos(self.Angle[1]) * np.sin(self.Angle[0]),
+             np.sin(self.Angle[1])])
+
         #  生成子簇平均功率
         for i in range(self.Mn):
             Znm = np.sqrt(3) * np.random.randn()
@@ -52,29 +72,16 @@ class cluster:
             Delta_angle = np.random.laplace(0, 0.017, 4)
             self.Angle_Mn.append(self.Angle + Delta_angle)
 
-    def cluster_update_time(self, time_interval):
-        # Δt时刻后
-        Pc = 0.3  # 运动散射簇的比例
-        vrx = 1  # 接收端移动速度
-        vct, vcr = 0, 0.5  # 散射簇相对于发，收天线的速度
-        # 新增的散射簇
-        delta = Pc * (vct + vcr) * Delta_t + vrx * Delta_t
+        #  生成子簇的位置矢量
+        for i in range(self.Mn):
+            self.Position_Mn_Rx.append(
+                (np.sqrt(15) * np.random.randn() + 25) * np.array(
+                    [np.cos(self.Angle_Mn[i][3]) * np.cos(self.Angle_Mn[i][2]),
+                     np.cos(self.Angle_Mn[i][3]) * np.sin(self.Angle_Mn[i][2]),
+                     np.sin(self.Angle_Mn[i][3])]) + D)
 
-        new_cluster = np.floor(Lambda_G / Lambda_R * (1 - np.exp(-Lambda_R * delta / Ds)))
-        P_survival_time = np.exp(-Lambda_R * delta / Ds)
-
-        # 时间轴上的演进
-        for k in range(1, int(t / Delta_t)):
-            N += int(new_cluster)
-            C.append(np.zeros([numTx, N]))
-            C[k][0] = np.arange(1, N + 1)
-            for i in range(1, numTx):
-                idx = 0
-                for j in C[k][i - 1]:
-                    if j != 0:
-                        if np.random.rand() < P_survival_time:
-                            C[k][i][idx] = j
-                        else:
-                            C[k][i][idx] = 0
-                    idx += 1
-        return C
+            self.Position_Mn_Tx.append(
+                (np.sqrt(15) * np.random.randn() + 25) * np.array(
+                    [np.cos(self.Angle_Mn[i][1]) * np.cos(self.Angle_Mn[i][0]),
+                     np.cos(self.Angle_Mn[i][1]) * np.sin(self.Angle_Mn[i][0]),
+                     np.sin(self.Angle_Mn[i][1])]))
