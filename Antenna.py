@@ -1,5 +1,5 @@
 class Antenna:
-    def __init__(self, shape: list, position: list, angles: list, delta_Ant):
+    def __init__(self, shape: list, position: list, angles: list,velocity:list, delta_Ant):
         self.shape = shape
         self.num = shape[0] * shape[1]
         self.position = position
