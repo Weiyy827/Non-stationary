@@ -4,8 +4,9 @@ import Antenna
 
 
 class cluster:
-    def __init__(self, Tx_Ant: Antenna, Rx_Ant: Antenna):
+    def __init__(self, Tx_Ant: Antenna, Rx_Ant: Antenna, idx: int):
         # 簇参数设置
+        self.idx = idx
 
         self.Power = None
         self.Power_Mn = []
@@ -51,9 +52,7 @@ class cluster:
             Delta_angle = np.random.laplace(0, 0.017, 4)
             self.Angle_Mn.append(self.Angle + Delta_angle)
 
-        #  簇被哪些子天线可见
-
-    def cluster_update(self, time_interval):
+    def cluster_update_time(self, time_interval):
         # Δt时刻后
         Pc = 0.3  # 运动散射簇的比例
         vrx = 1  # 接收端移动速度
@@ -79,9 +78,3 @@ class cluster:
                             C[k][i][idx] = 0
                     idx += 1
         return C
-
-
-if __name__ == '__main__':
-    Tx = Antenna.Antenna([1, 32], [0, 0, 0], [0, np.pi / 4], 0.1)
-    Rx = Antenna.Antenna([1, 32], [10, 0, 0], [np.pi, 0], 0.1)
-    Cluster = cluster(Tx, Rx)
