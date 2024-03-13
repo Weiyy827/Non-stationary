@@ -1,5 +1,6 @@
 import copy
 
+import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -56,4 +57,5 @@ def cluster_evolution_Ant_plot(Cluster_set):
     plt.ylabel("Cluster")
     plt.yticks(np.arange(N))
     plt.title("t=0, Cluster Evolution on Antenna Axis")
+    matplotlib.use('TkAgg')
     plt.show()

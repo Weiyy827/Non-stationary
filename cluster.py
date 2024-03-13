@@ -1,6 +1,6 @@
 import numpy as np
 
-import Antenna
+import antenna
 from config import Rtau, Stau
 
 
@@ -52,15 +52,16 @@ class cluster:
                     (Tx_Ant.position[1] - Rx_Ant.position[1]) ** 2 +
                     (Tx_Ant.position[2] - Rx_Ant.position[2]) ** 2)
         D = np.array([d, 0, 0])
+
         self.Position_Rx = (np.sqrt(15) * np.random.randn() + 25) * np.array(
             [np.cos(self.Angle[3]) * np.cos(self.Angle[2]),
              np.cos(self.Angle[3]) * np.sin(self.Angle[2]),
-             np.sin(self.Angle[3])]) + D
+             np.sin(self.Angle[3])])
 
         self.Position_Tx = (np.sqrt(10) * np.random.randn() + 30) * np.array(
             [np.cos(self.Angle[1]) * np.cos(self.Angle[0]),
              np.cos(self.Angle[1]) * np.sin(self.Angle[0]),
-             np.sin(self.Angle[1])])
+             np.sin(self.Angle[1])]) + D
 
         #  生成子簇平均功率
         for i in range(self.Mn):
@@ -78,10 +79,10 @@ class cluster:
                 (np.sqrt(15) * np.random.randn() + 25) * np.array(
                     [np.cos(self.Angle_Mn[i][3]) * np.cos(self.Angle_Mn[i][2]),
                      np.cos(self.Angle_Mn[i][3]) * np.sin(self.Angle_Mn[i][2]),
-                     np.sin(self.Angle_Mn[i][3])]) + D)
+                     np.sin(self.Angle_Mn[i][3])]))
 
             self.Position_Mn_Tx.append(
                 (np.sqrt(15) * np.random.randn() + 25) * np.array(
                     [np.cos(self.Angle_Mn[i][1]) * np.cos(self.Angle_Mn[i][0]),
                      np.cos(self.Angle_Mn[i][1]) * np.sin(self.Angle_Mn[i][0]),
-                     np.sin(self.Angle_Mn[i][1])]))
+                     np.sin(self.Angle_Mn[i][1])]) + D)

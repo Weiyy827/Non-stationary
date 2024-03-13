@@ -1,9 +1,8 @@
 import commpy
 import numpy as np
 
-import Antenna
 import channel_model
-from config import fc, bw, n, c, isLOS
+from config import fc, bw, n, c
 
 # 参数设置
 
@@ -13,8 +12,14 @@ qpsk = commpy.PSKModem(4)
 x = qpsk.modulate(bits)
 
 # 生成天线
-Tx = Antenna.Antenna([0, 0, 5], [np.pi/2, -np.pi / 2], [0, 0.3, 0], Ant_type='ULA', Num=32, Delta=c/fc/2)
-Rx = Antenna.Antenna([10, 0, 1.5], [0, np.pi/2], [0.5, 0, 0], Ant_type='ULA', Num=32, Delta=c/fc/2)
+Sat = Antenna.Satellite(height=500e3, azimuth=0, elevation=np.pi / 6)
+Rx = Antenna.Antenna([10, 0, 1.5], [0, np.pi / 2], [0.5, 0, 0], Ant_type='ULA', Num=32, Delta=c / fc / 2)
+Tx = Antenna.Antenna(
+    [Sat.height / np.tan(Sat.elevation) * np.cos(Sat.azimuth),
+     Sat.height / np.tan(Sat.elevation) * np.sin(Sat.azimuth),
+     Sat.height],
+    [np.pi / 2, -np.pi / 2],
+    [Sat.vsat * np.cos(Sat.azimuth), Sat.vsat * np.sin(Sat.azimuth), 0], Ant_type='ULA', Num=32, Delta=c / fc / 2)
 
 # 过信道
-y = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw, isLOS)
+y = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw)
