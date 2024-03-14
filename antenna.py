@@ -1,5 +1,7 @@
 import numpy as np
 
+from config import Re
+
 
 class Antenna:
     def __init__(self, position: list, angles: list, velocity: list, slant, **kwargs):
@@ -26,3 +28,15 @@ class Satellite:
         self.azimuth = azimuth
         self.elevation = elevation
         self.vsat = np.sqrt(9.8 / self.height)
+        self.Global_GCS_coordinate = np.array([(self.height + Re) * np.cos(self.elevation) * np.cos(self.azimuth),
+                                               (self.height + Re) * np.cos(self.elevation) * np.sin(self.azimuth),
+                                               (self.height + Re) * np.sin(self.elevation)])
+
+
+class Origin:
+    def __init__(self, latitude, longitude):
+        self.longitude = longitude
+        self.latitude = latitude
+        self.Global_GCS_coordinate = np.array([Re * np.cos(self.latitude) * np.cos(self.longitude),
+                                               Re * np.cos(self.latitude) * np.cos(self.longitude),
+                                               Re * np.sin(self.latitude)])

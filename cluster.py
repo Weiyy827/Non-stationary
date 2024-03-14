@@ -47,6 +47,7 @@ class cluster:
         #  生成簇AOA,AOD
         self.Angle.append(1.15 * np.random.randn() + self.Tx_Ant.azimuth)
         self.Angle.append(0.18 * np.random.randn() + self.Tx_Ant.elevation)
+
         self.Angle.append(0.54 * np.random.randn() + self.Rx_Ant.azimuth)
         self.Angle.append(0.11 * np.random.randn() + self.Rx_Ant.elevation)
 
