@@ -35,8 +35,19 @@ class Satellite:
 
 class Origin:
     def __init__(self, latitude, longitude):
-        self.longitude = longitude
-        self.latitude = latitude
-        self.Global_GCS_coordinate = np.array([Re * np.cos(self.latitude) * np.cos(self.longitude),
-                                               Re * np.cos(self.latitude) * np.cos(self.longitude),
-                                               Re * np.sin(self.latitude)])
+        self.longitude_deg = longitude
+        self.latitude_deg = latitude
+
+        self.longitude_rad = longitude * np.pi / 180
+        self.latitude_rad = latitude * np.pi / 180
+        self.Global_GCS_coordinate = np.array([Re * np.cos(self.latitude_rad) * np.cos(self.longitude_rad),
+                                               Re * np.cos(self.latitude_rad) * np.sin(self.longitude_rad),
+                                               Re * np.sin(self.latitude_rad)])
+
+        z = (self.longitude_deg - 90) * np.pi / 180  # z：z轴不动逆时针旋转经度
+        y = (90 - self.latitude_deg) * np.pi / 180  # y: y轴不动逆时针旋转90-纬度
+        self.Rotation = np.array([np.cos(z), np.sin(z), 0,
+                                  -np.sin(z), np.cos(z), 0,
+                                  0, 0, 1]).reshape([3, 3]) @ np.array([np.cos(y), 0, -np.sin(y),
+                                                                        0, 1, 0,
+                                                                        np.sin(y), 0, np.cos(y)]).reshape([3, 3])

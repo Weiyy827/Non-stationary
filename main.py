@@ -12,19 +12,19 @@ bits = np.random.binomial(1, 0.5, n)
 qpsk = commpy.PSKModem(4)
 x = qpsk.modulate(bits)
 
-# 生成天线
-Sat = antenna.Satellite(height=500e3, azimuth=0, elevation=np.pi / 6)
+# 生成卫星
+Sat = antenna.Satellite(height=500e3, azimuth=0, elevation=0)
 
-# 经纬度和半径决定原点GCS的原点
-Origin = antenna.Origin(latitude=39.9062, longitude=116.3912)
+# 经纬度和半径决定本地GCS的原点，latitude纬度，longitude经度
+Origin = antenna.Origin(latitude=0, longitude=0)
 
 # Rx天线设置
 Rx = antenna.Antenna([10, 0, 1.5], [0, np.pi / 2], [0.5, 0, 0], np.pi / 4, Ant_type='ULA', Num=32,
                      Delta=c / fc / 2)
-#  地球GCS到原点GCS转换
-Sat_GCS_coordinate = (Sat.Global_GCS_coordinate - Origin.Global_GCS_coordinate)*Origin.Rotation
+#  地球GCS到本地GCS转换
+Sat_GCS_coordinate = Origin.Rotation @ (Sat.Global_GCS_coordinate - Origin.Global_GCS_coordinate)
 
-Tx = antenna.Antenna(Sat_GCS_coordinate, [np.pi / 2, -np.pi / 2],
+Tx = antenna.Antenna(Sat_GCS_coordinate, [0, -np.pi / 2],
                      [Sat.vsat * np.cos(Sat.azimuth), Sat.vsat * np.sin(Sat.azimuth), 0],
                      np.pi / 4, Ant_type='ULA', Num=32, Delta=c / fc / 2)
 
