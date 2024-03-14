@@ -13,3 +13,4 @@ Lambda_R = 4  # 簇消亡率
 
 Rtau = 2.3  # 时延因子 2.3：NLOS城市室外，2.4：NLOS办公室室内
 Stau = np.power(10, 0.32) * np.random.randn() + np.power(10, -6.63)  # 随机生成时延扩展
+

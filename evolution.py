@@ -4,11 +4,12 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
+import antenna
 from cluster import cluster
 from config import N, Lambda_R
 
 
-def cluster_evolution_init(Tx_Ant, Rx_Ant):
+def cluster_evolution_init(Tx_Ant: antenna.Antenna, Rx_Ant: antenna.Antenna):
     Cluster_set = []
     Ant_cluster_set = []
     for i in range(N):
@@ -19,7 +20,7 @@ def cluster_evolution_init(Tx_Ant, Rx_Ant):
     return Cluster_set
 
 
-def cluster_evolution_Ant(Cluster_set, Ant):
+def cluster_evolution_Ant(Cluster_set, Ant: antenna.Antenna):
     if Ant.Ant_type == 'ULA':
         Ds = 10  # 空间相关性参数，由场景决定，可选10，30，50，100
         P_survival = np.exp(-Lambda_R * Ant.delta_Ant / Ds)

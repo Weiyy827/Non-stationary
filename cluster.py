@@ -5,9 +5,11 @@ from config import Rtau, Stau
 
 
 class cluster:
-    def __init__(self, Tx_Ant: Antenna, Rx_Ant: Antenna, idx: int):
+    def __init__(self, Tx_Ant: antenna.Antenna, Rx_Ant: antenna.Antenna, idx: int):
         # 簇参数设置
         self.idx = idx
+
+        self.Mn = None
 
         self.Power = None
         self.Power_Mn = []
@@ -17,12 +19,13 @@ class cluster:
         self.Angle = []
         self.Angle_Mn = []
 
-        self.Mn = None
-
         self.Position_Rx = np.array([])
         self.Position_Tx = np.array([])
         self.Position_Mn_Rx = []
         self.Position_Mn_Tx = []
+
+        self.Xnm_Mn = []
+        self.Phase_Mn = []
 
         # 天线设置
         self.Tx_Ant = Tx_Ant
@@ -63,18 +66,24 @@ class cluster:
              np.cos(self.Angle[1]) * np.sin(self.Angle[0]),
              np.sin(self.Angle[1])]) + D
 
-        #  生成子簇平均功率
+        #  生成子簇的参数
         for i in range(self.Mn):
+            #  生成子簇极化交叉比
+            self.Xnm_Mn.append(3 * np.random.randn() + 9)  # 暂时只考虑UMi
+
+            #  生成子簇相位
+            Phase = np.random.uniform(-np.pi, np.pi, 4)
+            self.Phase_Mn.append(Phase)
+
+            #  生成子簇平均功率
             Znm = np.sqrt(3) * np.random.randn()
             self.Power_Mn.append(np.exp(1 - Rtau) * np.power(10, -Znm / 10))
 
-        #  生成子簇角度参数
-        for i in range(self.Mn):
+            #  生成子簇角度参数
             Delta_angle = np.random.laplace(0, 0.017, 4)
             self.Angle_Mn.append(self.Angle + Delta_angle)
 
-        #  生成子簇的位置矢量
-        for i in range(self.Mn):
+            #  生成子簇的位置矢量
             self.Position_Mn_Rx.append(
                 (np.sqrt(15) * np.random.randn() + 25) * np.array(
                     [np.cos(self.Angle_Mn[i][3]) * np.cos(self.Angle_Mn[i][2]),

@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Antenna:
-    def __init__(self, position: list, angles: list, velocity: list, **kwargs):
+    def __init__(self, position: list, angles: list, velocity: list, slant, **kwargs):
 
         if kwargs['Ant_type'] == 'URA':
             self.Ant_type = 'URA'
@@ -14,6 +14,7 @@ class Antenna:
             self.num = kwargs['Num']
 
         self.position = position
+        self.slant = slant
         self.azimuth = angles[0]
         self.elevation = angles[1]
         self.velocity = velocity
