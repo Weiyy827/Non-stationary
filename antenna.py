@@ -15,7 +15,7 @@ class Antenna:
             self.delta_Ant = kwargs['Delta']
             self.num = kwargs['Num']
 
-        self.position = position
+        self.position = np.array(position)
         self.slant = slant * np.pi / 180
         self.azimuth = angles[0] * np.pi / 180
         self.elevation = angles[1] * np.pi / 180

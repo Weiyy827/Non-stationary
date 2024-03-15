@@ -44,15 +44,20 @@ class cluster:
              np.cos(self.Angle[3]) * np.sin(self.Angle[2]),
              np.sin(self.Angle[3])]) + Rx_Ant.position
 
-        #  生成簇相对LOS的时延
-        Distance_Rx = np.sqrt((Rx_Ant.position[0] - self.Position[0]) ** 2 + (Rx_Ant.position[1] - self.Position[1]) ** 2 + (Rx_Ant.position[2] - self.Position[2]) ** 2)
-        Distance_Tx = np.sqrt((Tx_Ant.position[0] - self.Position[0]) ** 2 + (Tx_Ant.position[1] - self.Position[1]) ** 2 + (Tx_Ant.position[2] - self.Position[2]) ** 2)
-        Distance_LOS = np.sqrt((Rx_Ant.position[0] - Tx_Ant.position[0]) ** 2 + (Rx_Ant.position[1] - Tx_Ant.position[1]) ** 2 + (Rx_Ant.position[2] - Tx_Ant.position[2]) ** 2)
-        self.Delay = (Distance_Rx+Distance_Tx-Distance_LOS)/config.c
+        #  生成簇时延
+        Distance_Rx = np.sqrt(
+            (Rx_Ant.position[0] - self.Position[0]) ** 2 + (Rx_Ant.position[1] - self.Position[1]) ** 2 + (
+                        Rx_Ant.position[2] - self.Position[2]) ** 2)
+        Distance_Tx = np.sqrt(
+            (Tx_Ant.position[0] - self.Position[0]) ** 2 + (Tx_Ant.position[1] - self.Position[1]) ** 2 + (
+                        Tx_Ant.position[2] - self.Position[2]) ** 2)
+        Distance_LOS = np.sqrt(
+            (Rx_Ant.position[0] - Tx_Ant.position[0]) ** 2 + (Rx_Ant.position[1] - Tx_Ant.position[1]) ** 2 + (
+                        Rx_Ant.position[2] - Tx_Ant.position[2]) ** 2)
+        self.Relative_Delay = (Distance_Rx + Distance_Tx - Distance_LOS) / config.c
+        self.Absolute_Delay = (Distance_Rx + Distance_Tx) / config.c
 
         #  生成簇平均功率
-        Zn = np.sqrt(3) * np.random.randn()
-        self.Power = np.exp(-self.Delay * (Rtau - 1) / (Rtau * Stau)) * np.power(10, -Zn / 10)
 
         #  生成子簇的参数
         for i in range(self.Sub):
@@ -63,9 +68,11 @@ class cluster:
             Phase = np.random.uniform(-np.pi, np.pi, 4)
             self.Phase_sub.append(Phase)
 
-            #  生成子簇平均功率
+            #  生成子簇平均功率，直接对应时延功率谱
             Znm = np.sqrt(3) * np.random.randn()
-            self.Power_sub.append(np.exp(1 - Rtau) * np.power(10, -Znm / 10))
+
+            f = config.fc
+            self.Power_sub.append(np.exp(1 - Rtau) * np.power(10, -Znm / 10) * (f / config.fc) ** 1)  # gamma = 1,f为频率
 
             #  生成子簇角度参数
             Delta_angle = np.random.laplace(0, 0.017, 4)
