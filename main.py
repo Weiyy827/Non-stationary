@@ -20,13 +20,23 @@ Sat = antenna.Satellite(height=500e3, azimuth=30, elevation=30)
 Origin = antenna.Origin(latitude=45, longitude=45)
 
 # Rx天线设置
-Rx = antenna.Antenna([10, 0, 1.5], [0, 90], [0.5, 0, 0], 45, Ant_type='ULA', Num=32,
-                     Delta=c / fc / 2)
+Rx = antenna.Antenna(
+    [10, 0, 1.5], [0, 90], [0.5, 0, 0], 45, Ant_type="ULA", Num=32, Delta=c / fc / 2
+)
 #  地球GCS到本地GCS转换
-Sat_GCS_coordinate = Origin.Rotation @ (Sat.Global_GCS_coordinate - Origin.Global_GCS_coordinate)
+Sat_GCS_coordinate = Origin.rotation @ (
+    Sat.global_GCS_coordinate - Origin.global_GCS_coordinate
+)
 
-Tx = antenna.Antenna(Sat_GCS_coordinate, [0, -90], Sat.velocity @ np.transpose(Origin.Rotation), 45,
-                     Ant_type='ULA', Num=32, Delta=c / fc / 2)
+Tx = antenna.Antenna(
+    Sat_GCS_coordinate,
+    [0, -90],
+    Sat.velocity @ np.transpose(Origin.rotation),
+    45,
+    Ant_type="ULA",
+    Num=32,
+    Delta=c / fc / 2,
+)
 
 # 过信道
 y = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw)

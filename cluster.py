@@ -2,85 +2,101 @@ import numpy as np
 
 import antenna
 import config
-from config import Rtau, Stau
 
 
-class cluster:
-    def __init__(self, Tx_Ant: antenna.Antenna, Rx_Ant: antenna.Antenna, idx: int):
+class Cluster:
+    def __init__(self, Tx_ant: antenna.Antenna, Rx_ant: antenna.Antenna, idx: int):
         # 簇参数设置
 
         self.idx = idx
 
-        self.Power_sub = []
+        self.power_sub = []
 
-        self.Angle = []
-        self.Angle_sub = []
+        self.angle = []
+        self.angle_sub = []
 
-        self.Position_sub = []
-        self.V_Position_sub_Tx = []
-        self.V_Position_sub_Rx = []
+        self.position_sub = []
+        self.vector_sub_Tx = []
+        self.vector_sub_Rx = []
 
-        self.Xnm_sub = []
-        self.Phase_sub = []
+        self.xnm_sub = []
+        self.phase_sub = []
 
         # 天线设置
-        self.Tx_Ant = Tx_Ant
-        self.Rx_Ant = Rx_Ant
+        self.Tx_ant = Tx_ant
+        self.Rx_ant = Rx_ant
 
         #  生成一个新簇
         #  生成簇内的子簇
-        self.Sub = np.max([np.random.poisson(20), 1])
+        self.sub = np.max([np.random.poisson(20), 1])
 
         #  生成簇AOA,AOD
-        self.Angle.append(1.15 * np.random.randn() + self.Tx_Ant.azimuth)
-        self.Angle.append(0.18 * np.random.randn() + self.Tx_Ant.elevation)
+        self.angle.append(1.15 * np.random.randn() + self.Tx_ant.azimuth)
+        self.angle.append(0.18 * np.random.randn() + self.Tx_ant.elevation)
 
-        self.Angle.append(0.54 * np.random.randn() + self.Rx_Ant.azimuth)
-        self.Angle.append(0.11 * np.random.randn() + self.Rx_Ant.elevation)
+        self.angle.append(0.54 * np.random.randn() + self.Rx_ant.azimuth)
+        self.angle.append(0.11 * np.random.randn() + self.Rx_ant.elevation)
 
         #  生成簇的位置，本地GCS
-        self.Position = (np.sqrt(15) * np.random.randn() + 25) * np.array(
-            [np.cos(self.Angle[3]) * np.cos(self.Angle[2]),
-             np.cos(self.Angle[3]) * np.sin(self.Angle[2]),
-             np.sin(self.Angle[3])]) + Rx_Ant.position
+        self.position = (np.sqrt(15) * np.random.randn() + 25) * np.array(
+            [
+                np.cos(self.angle[3]) * np.cos(self.angle[2]),
+                np.cos(self.angle[3]) * np.sin(self.angle[2]),
+                np.sin(self.angle[3]),
+            ]
+        ) + Rx_ant.position
 
         #  生成簇时延
-        Distance_Rx = np.sqrt(
-            (Rx_Ant.position[0] - self.Position[0]) ** 2 + (Rx_Ant.position[1] - self.Position[1]) ** 2 + (
-                        Rx_Ant.position[2] - self.Position[2]) ** 2)
-        Distance_Tx = np.sqrt(
-            (Tx_Ant.position[0] - self.Position[0]) ** 2 + (Tx_Ant.position[1] - self.Position[1]) ** 2 + (
-                        Tx_Ant.position[2] - self.Position[2]) ** 2)
-        Distance_LOS = np.sqrt(
-            (Rx_Ant.position[0] - Tx_Ant.position[0]) ** 2 + (Rx_Ant.position[1] - Tx_Ant.position[1]) ** 2 + (
-                        Rx_Ant.position[2] - Tx_Ant.position[2]) ** 2)
-        self.Relative_Delay = (Distance_Rx + Distance_Tx - Distance_LOS) / config.c
-        self.Absolute_Delay = (Distance_Rx + Distance_Tx) / config.c
+        distance_Rx = np.sqrt(
+            (Rx_ant.position[0] - self.position[0]) ** 2
+            + (Rx_ant.position[1] - self.position[1]) ** 2
+            + (Rx_ant.position[2] - self.position[2]) ** 2
+        )
+        distance_Tx = np.sqrt(
+            (Tx_ant.position[0] - self.position[0]) ** 2
+            + (Tx_ant.position[1] - self.position[1]) ** 2
+            + (Tx_ant.position[2] - self.position[2]) ** 2
+        )
+        distance_LOS = np.sqrt(
+            (Rx_ant.position[0] - Tx_ant.position[0]) ** 2
+            + (Rx_ant.position[1] - Tx_ant.position[1]) ** 2
+            + (Rx_ant.position[2] - Tx_ant.position[2]) ** 2
+        )
+        self.relative_delay = (distance_Rx + distance_Tx - distance_LOS) / config.c
+        self.absolute_delay = (distance_Rx + distance_Tx) / config.c
 
         #  生成簇平均功率
 
         #  生成子簇的参数
-        for i in range(self.Sub):
+        for i in range(self.sub):
             #  生成子簇极化交叉比
-            self.Xnm_sub.append(3 * np.random.randn() + 9)  # 暂时只考虑UMi
+            self.xnm_sub.append(3 * np.random.randn() + 9)  # 暂时只考虑UMi
 
             #  生成子簇相位
-            Phase = np.random.uniform(-np.pi, np.pi, 4)
-            self.Phase_sub.append(Phase)
+            phase = np.random.uniform(-np.pi, np.pi, 4)
+            self.phase_sub.append(phase)
 
             #  生成子簇平均功率，直接对应时延功率谱
-            Znm = np.sqrt(3) * np.random.randn()
+            znm = np.sqrt(3) * np.random.randn()
 
             f = config.fc
-            self.Power_sub.append(np.exp(1 - Rtau) * np.power(10, -Znm / 10) * (f / config.fc) ** 1)  # gamma = 1,f为频率
+            self.power_sub.append(
+                np.exp(1 - Rtau) * np.power(10, -znm / 10) * (f / config.fc) ** 1
+            )  # gamma = 1,f为频率
 
             #  生成子簇角度参数
-            Delta_angle = np.random.laplace(0, 0.017, 4)
-            self.Angle_sub.append(self.Angle + Delta_angle)
+            delta_angle = np.random.laplace(0, 0.017, 4)
+            self.angle_sub.append(self.angle + delta_angle)
 
             #  生成子簇的位置矢量
-            self.Position_sub.append(
-                (np.sqrt(15) * np.random.randn() + 25) * np.array(
-                    [np.cos(self.Angle_sub[i][3]) * np.cos(self.Angle_sub[i][2]),
-                     np.cos(self.Angle_sub[i][3]) * np.sin(self.Angle_sub[i][2]),
-                     np.sin(self.Angle_sub[i][3])]) + Rx_Ant.position)
+            self.position_sub.append(
+                (np.sqrt(15) * np.random.randn() + 25)
+                * np.array(
+                    [
+                        np.cos(self.angle_sub[i][3]) * np.cos(self.angle_sub[i][2]),
+                        np.cos(self.angle_sub[i][3]) * np.sin(self.angle_sub[i][2]),
+                        np.sin(self.angle_sub[i][3]),
+                    ]
+                )
+                + Rx_ant.position
+            )
