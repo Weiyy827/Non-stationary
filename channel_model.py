@@ -25,24 +25,24 @@ def non_stationary_channel(inputWaveform, Tx_Ant: antenna.Antenna, Rx_Ant: anten
             hN_cluster = 0
             for k in Clusters:  # 第k个可见簇
                 hN_k = 0
-                for m in range(k.Mn):  # 簇内的子簇
+                for m in range(k.Sub):  # 簇内的子簇
                     #  1.用子簇的Rx A和E计算接收场量
 
                     # 0:Tx Azimuth; 1:Tx Elevation
                     # 2:Rx Azimuth; 3:Rx Elevation
-                    Rx_field = coeff_calculation.field(k.Angle_Mn[m][3], k.Angle_Mn[m][2], Rx_Ant.slant)
+                    Rx_field = coeff_calculation.field(k.Angle_sub[m][3], k.Angle_sub[m][2], Rx_Ant.slant)
 
                     #  2.交叉极化项
-                    Cross_polar = coeff_calculation.cross_polar(k.Xnm_Mn[m], k.Phase_Mn[m])
+                    Cross_polar = coeff_calculation.cross_polar(k.Xnm_sub[m], k.Phase_sub[m])
 
                     #  3.法拉第旋转，在载波频率小于10GHz时需要考虑
                     Faraday = np.array([np.cos(108 / (fc ** 2)), -np.sin(108 / (fc ** 2)),
                                         np.sin(108 / (fc ** 2)), np.cos(108 / (fc ** 2))]).reshape([2, 2])
                     #  4.发射场量
-                    Tx_field = coeff_calculation.field(k.Angle_Mn[m][1], k.Angle_Mn[m][0], Tx_Ant.slant)
+                    Tx_field = coeff_calculation.field(k.Angle_sub[m][1], k.Angle_sub[m][0], Tx_Ant.slant)
 
                     #  5.功率量
-                    Power = np.sqrt(k.Power_Mn[m])
+                    Power = np.sqrt(k.Power_sub[m])
 
                     #  6.多普勒量
                     Doppler = np.exp(1j * 2 * np.pi * k.Delay)

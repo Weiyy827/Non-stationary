@@ -3,10 +3,10 @@ import numpy as np
 Re = 6356.9008e3  # 地球半径
 
 n = int(10e6)  # 比特数
-fs = 10e5  # 采样率
+fs = int(1e9)  # 采样率
 fc = 2e9  # 中心频率，单位Hz
 bw = 100e6  # 信号带宽
-c = 3e8  # 光速
+c = 3e8  # 光速s
 isLOS = True
 
 N = 20  # 初始可见簇
