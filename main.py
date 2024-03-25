@@ -1,9 +1,10 @@
 import commpy
 import numpy as np
+from scipy import constants
 
-import antenna
 import channel_model
-from config import fc, bw, n, c, fs
+import scenario
+from config import fc, bw, n
 
 # 参数设置
 
@@ -14,29 +15,35 @@ x = qpsk.modulate(bits)
 # 上采样到采样率
 
 # 生成卫星
-Sat = antenna.Satellite(height=500e3, azimuth=30, elevation=30)
+Sat = scenario.Satellite(height=500e3, azimuth=30, elevation=30)
 
 # 经纬度和半径决定本地GCS的原点，latitude纬度，longitude经度
-Origin = antenna.Origin(latitude=45, longitude=45)
+Origin = scenario.Origin(latitude=45, longitude=45)
 
 # Rx天线设置
-Rx = antenna.Antenna(
-    [10, 0, 1.5], [0, 90], [0.5, 0, 0], 45, Ant_type="ULA", Num=32, Delta=c / fc / 2
+Rx = scenario.Antenna(
+    [10, 0, 1.5],
+    [0, 90],
+    [0.5, 0, 0],
+    45,
+    Ant_type="ULA",
+    Num=32,
+    Delta=constants.c / fc / 2
 )
 #  地球GCS到本地GCS转换
-Sat_GCS_coordinate = Origin.rotation @ (
-    Sat.global_GCS_coordinate - Origin.global_GCS_coordinate
-)
+Sat_GCS_coordinate = Origin.rotation @ (Sat.global_GCS_coordinate - Origin.global_GCS_coordinate)
 
-Tx = antenna.Antenna(
+Tx = scenario.Antenna(
     Sat_GCS_coordinate,
     [0, -90],
     Sat.velocity @ np.transpose(Origin.rotation),
     45,
     Ant_type="ULA",
     Num=32,
-    Delta=c / fc / 2,
+    Delta=constants.c / fc / 2,
 )
 
 # 过信道
-y = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw)
+t = 0
+channel_coeff = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw, t)
+print(channel_coeff)

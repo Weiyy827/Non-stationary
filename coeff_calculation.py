@@ -1,11 +1,11 @@
 import numpy as np
 
+from utils import db2pow
 
-def field(elevation, azimuth, slant):
-    elevation_deg = elevation * np.pi / 180
-    azimuth_deg = azimuth * np.pi / 180
-    vertical_cut = -np.min([12 * ((elevation_deg - 90) / 65) ** 2, 30])
-    horizontal_cut = -np.min([12 * (azimuth_deg / 65) ** 2, 30])
+
+def field(zenith, azimuth, slant):
+    vertical_cut = -np.min([12 * ((zenith - 90) / 65) ** 2, 30])
+    horizontal_cut = -np.min([12 * (azimuth / 65) ** 2, 30])
     radiation_field = -np.min([-vertical_cut - horizontal_cut, 30])
     power_pattern = np.array(
         [
@@ -14,10 +14,6 @@ def field(elevation, azimuth, slant):
         ]
     ).reshape([2, 1])
     return power_pattern
-
-
-def db2pow(db):
-    return 10 ** (db / 10)
 
 
 def cross_polar(xnm, phase):

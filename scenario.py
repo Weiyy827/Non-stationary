@@ -21,6 +21,9 @@ class Antenna:
         self.elevation = angles[1] * np.pi / 180
         self.velocity = velocity
 
+    def evolve(self, time_instance):
+        pass
+
 
 class Satellite:
     def __init__(self, height, azimuth, elevation):

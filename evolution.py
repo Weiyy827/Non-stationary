@@ -4,14 +4,14 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
-import antenna
+import scenario
 from cluster import Cluster
-from config import N, Lambda_R
 
 
-def cluster_evolution_init(Tx_ant: antenna.Antenna, Rx_ant: antenna.Antenna):
+def cluster_evolution_init(Tx_ant: scenario.Antenna, Rx_ant: scenario.Antenna):
     cluster_set = []
     ant_cluster_set = []
+    N = 20  # 簇的数量
     for i in range(N):
         ant_cluster_set.append(Cluster(Tx_ant, Rx_ant, i))
 
@@ -20,24 +20,25 @@ def cluster_evolution_init(Tx_ant: antenna.Antenna, Rx_ant: antenna.Antenna):
     return cluster_set
 
 
-def cluster_evolution_Ant(cluster_set, ant: antenna.Antenna):
+def cluster_evolution_Ant(cluster_set, ant: scenario.Antenna):
+    Lambda_R = 4  # 簇死亡率
     if ant.ant_type == "ULA":
         Ds = 10  # 空间相关性参数，由场景决定，可选10，30，50，100
-        P_survival = np.exp(-Lambda_R * ant.ant_spacing / Ds)
-
+        p_survival = np.exp(-Lambda_R * ant.ant_spacing / Ds)
+        ant_cluster = [cluster_set]
         for i in range(1, ant.num):
-            temp = copy.deepcopy(cluster_set[i - 1])  # 复制列表到内存另一块
+            temp = copy.deepcopy(ant_cluster[i - 1])  # 复制列表到内存另一块
             for j in temp:
-                if np.random.rand() < P_survival:
+                if np.random.rand() < p_survival:
                     pass
                 else:
                     temp.remove(j)
-            cluster_set.append(temp)
+            ant_cluster.append(temp)
 
     if ant.ant_type == "URA":
         pass
 
-    return cluster_set
+    return ant_cluster
 
 
 def cluster_evolution_Time():
@@ -56,7 +57,7 @@ def cluster_evolution_Ant_plot(cluster_set):
     plt.scatter(x_cord, y_cord)
     plt.xlabel("Antenna Index")
     plt.ylabel("Cluster")
-    plt.yticks(np.arange(N))
+    plt.yticks(np.arange(20))
     plt.title("t=0, Cluster Evolution on Antenna Axis")
     matplotlib.use("TkAgg")
     plt.show()
