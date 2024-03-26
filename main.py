@@ -1,6 +1,7 @@
 import commpy
 import numpy as np
 from scipy import constants
+from scipy.io import savemat
 
 import channel_model
 import scenario
@@ -23,7 +24,7 @@ Origin = scenario.Origin(latitude=45, longitude=45)
 # Rx天线设置
 Rx = scenario.Antenna(
     [10, 0, 1.5],
-    [0, 90],
+    [45, 90],
     [0.5, 0, 0],
     45,
     Ant_type="ULA",
@@ -45,5 +46,8 @@ Tx = scenario.Antenna(
 
 # 过信道
 t = 0
-channel_coeff = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw, t)
-print(channel_coeff)
+y = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw, t)
+
+# 存储信号文件
+mat_file = 'signal.mat'
+savemat(mat_file, {'x': x, 'y': y})

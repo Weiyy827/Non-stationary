@@ -4,6 +4,7 @@ from utils import db2pow
 
 
 def field(zenith, azimuth, slant):
+    slant = slant / 180 * np.pi
     vertical_cut = -np.min([12 * ((zenith - 90) / 65) ** 2, 30])
     horizontal_cut = -np.min([12 * (azimuth / 65) ** 2, 30])
     radiation_field = -np.min([-vertical_cut - horizontal_cut, 30])
