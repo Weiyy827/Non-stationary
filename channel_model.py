@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
@@ -114,6 +115,14 @@ def non_stationary_channel(
 
     # 用参数生成簇
     cluster_set = cluster_generate(tau, power, AOA, AOD, ZOA, ZOD, lsp['XPR'])
+    # 画出簇的时延功率谱
+    delays = [i.delay for i in cluster_set]
+    powers = [i.power for i in cluster_set]
+    plt.scatter(delays, powers)
+    plt.xlabel("Delay")
+    plt.ylabel("Power")
+    plt.title("Power-Delay Profile")
+    plt.show()
 
     # 2.计算该时刻的簇演进
     # 在天线轴上进行演进
@@ -214,7 +223,7 @@ def non_stationary_channel(
 
                 # 这个簇的信道系数与时延
                 hN += hN_k
-                delay = ray.tau * 1e10
+                delay = ray.delay * 1e10
                 filter_coeff = np.append(np.zeros(int(delay)), 1)
                 # 对信号进行处理
                 outputWaveform_cluster += hN * scipy.signal.lfilter(filter_coeff, 1, inputWaveform)

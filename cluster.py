@@ -6,7 +6,7 @@ class Cluster:
         # 簇参数设置
         self.number = 20
         self.idx = idx
-        self.tau = delay
+        self.delay = delay
         self.power = power
         self.cAOA = cAOA
         self.cAOD = cAOD
