@@ -8,19 +8,14 @@ import scenario
 from cluster import Cluster
 
 
-def cluster_evolution_init(Tx_ant: scenario.Antenna, Rx_ant: scenario.Antenna):
-    cluster_set = []
-    ant_cluster_set = []
-    N = 20  # 簇的数量
-    for i in range(N):
-        ant_cluster_set.append(Cluster(Tx_ant, Rx_ant, i))
-
-    cluster_set.append(ant_cluster_set)
-
-    return cluster_set
-
-
 def cluster_evolution_Ant(cluster_set, ant: scenario.Antenna):
+    """
+    簇在天线轴上的演进
+
+    :param cluster_set: 天线上所有阵元的簇集合
+    :param ant: 天线对象
+    :return: 演进完后天线上所有阵元的簇集合
+    """
     Lambda_R = 4  # 簇死亡率
     if ant.ant_type == "ULA":
         Ds = 10  # 空间相关性参数，由场景决定，可选10，30，50，100

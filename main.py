@@ -5,7 +5,7 @@ from scipy.io import savemat
 
 import channel_model
 import scenario
-from config import fc, bw, n
+from config import fc, n
 
 # 参数设置
 
@@ -13,13 +13,12 @@ from config import fc, bw, n
 bits = np.random.binomial(1, 0.5, n)
 qpsk = commpy.PSKModem(4)
 x = qpsk.modulate(bits)
-# 上采样到采样率
 
 # 生成卫星
-Sat = scenario.Satellite(height=500e3, azimuth=30, elevation=30)
+Sat = scenario.Satellite(height=500e3, azimuth=0, elevation=90)
 
 # 经纬度和半径决定本地GCS的原点，latitude纬度，longitude经度
-Origin = scenario.Origin(latitude=45, longitude=45)
+Origin = scenario.Origin(latitude=90, longitude=0)
 
 # Rx天线设置
 Rx = scenario.Antenna(
@@ -31,9 +30,11 @@ Rx = scenario.Antenna(
     Num=32,
     Delta=constants.c / fc / 2
 )
-#  地球GCS到本地GCS转换
+
+# 地球GCS到本地GCS转换
 Sat_GCS_coordinate = Origin.rotation @ (Sat.global_GCS_coordinate - Origin.global_GCS_coordinate)
 
+# Tx天线设置
 Tx = scenario.Antenna(
     Sat_GCS_coordinate,
     [0, -90],
@@ -46,7 +47,7 @@ Tx = scenario.Antenna(
 
 # 过信道
 t = 0
-y = channel_model.non_stationary_channel(x, Tx, Rx, fc, bw, t)
+y = channel_model.non_stationary_channel(x, Tx, Rx, fc, t)
 
 # 存储信号文件
 mat_file = 'signal.mat'

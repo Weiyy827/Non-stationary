@@ -3,6 +3,14 @@ from scipy.linalg import sqrtm
 
 
 def lsp_generate(Tx_ant, Rx_ant, fc):
+    """
+    生成大尺度衰落参数
+
+    :param Tx_ant: 发射天线对象
+    :param Rx_ant: 接收天线对象
+    :param fc: 载波频率
+    :return: 包含大尺度衰落参数的字典，包括DS,KF,SF,ASD,ASA,ESD,ESA,XPR
+    """
     fGHz = fc / 1e9
     vec = Tx_ant.position - Rx_ant.position
     d2D = np.sqrt(vec[0] ** 2 + vec[1] ** 2)

@@ -4,6 +4,18 @@ from config import Re
 
 
 class Antenna:
+    """
+    天线类
+
+    成员：
+    ant_type: 阵列类型
+    num: 阵元数量
+    position: 天线位置
+    slant: 天线极化倾斜角
+    azimuth: 天线阵面法向方位角
+    elevation: 天线阵面法向仰角
+    velocity: 天线速度
+    """
     def __init__(self, position: list, angles: list, velocity: list, slant, **kwargs):
 
         if kwargs["Ant_type"] == "URA":
