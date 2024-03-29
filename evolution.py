@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import scenario
-from cluster import Cluster
+from config import lambda_R, Ds
 
 
 def cluster_evolution_Ant(cluster_set, ant: scenario.Antenna):
@@ -16,10 +16,8 @@ def cluster_evolution_Ant(cluster_set, ant: scenario.Antenna):
     :param ant: 天线对象
     :return: 演进完后天线上所有阵元的簇集合
     """
-    Lambda_R = 4  # 簇死亡率
     if ant.ant_type == "ULA":
-        Ds = 10  # 空间相关性参数，由场景决定，可选10，30，50，100
-        p_survival = np.exp(-Lambda_R * ant.ant_spacing / Ds)
+        p_survival = np.exp(-lambda_R * ant.ant_spacing / Ds)
         ant_cluster = [cluster_set]
         for i in range(1, ant.num):
             temp = copy.deepcopy(ant_cluster[i - 1])  # 复制列表到内存另一块

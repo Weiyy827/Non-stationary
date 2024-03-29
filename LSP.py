@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import sqrtm
 
 
-def lsp_generate(Tx_ant, Rx_ant, fc):
+def generate_lsp(Tx_ant, Rx_ant, fc):
     """
     生成大尺度衰落参数
 

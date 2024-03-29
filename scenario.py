@@ -1,6 +1,7 @@
 import numpy as np
+import scipy.constants
 
-from config import Re
+from config import Re, dt
 
 
 class Antenna:
@@ -16,6 +17,7 @@ class Antenna:
     elevation: 天线阵面法向仰角
     velocity: 天线速度
     """
+
     def __init__(self, position: list, angles: list, velocity: list, slant, **kwargs):
 
         if kwargs["Ant_type"] == "URA":
@@ -31,10 +33,14 @@ class Antenna:
         self.slant = slant * np.pi / 180
         self.azimuth = angles[0] * np.pi / 180
         self.elevation = angles[1] * np.pi / 180
-        self.velocity = velocity
+        self.velocity = np.array(velocity).reshape([3,])
 
-    def evolve(self, time_instance):
-        pass
+    def evolve(self):
+        """
+        天线在时间轴上演进一个单位
+        :return: 更新后的天线位置
+        """
+        self.position += self.velocity * dt
 
 
 class Satellite:
@@ -42,7 +48,8 @@ class Satellite:
         self.height = height
         self.azimuth = azimuth * np.pi / 180
         self.elevation = elevation * np.pi / 180
-        self.vsat = np.sqrt(9.8 / self.height)
+        earth_mass = 5.972e24
+        self.vsat = np.sqrt(scipy.constants.gravitational_constant * earth_mass / (self.height + Re))
         self.velocity = np.array(
             [self.vsat * np.cos(self.azimuth), self.vsat * np.sin(self.azimuth), 0]
         ).reshape([1, 3])
