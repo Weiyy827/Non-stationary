@@ -2,58 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-import LSP
-from coeff_calculation import field,cross_polar
+from LSP import generate_lsp
+from coeff_calculation import field, cross_polar
 import scenario
-from cluster import cluster_generate
-from config import fs
+from cluster import generate_cluster, generate_cluster_param
+from config import fs, lambda_G, lambda_R, Ds, Dt, dt
 from evolution import cluster_evolution_Ant_plot, cluster_evolution_Ant
-
-
-def LCS_convert(azimuth, zenith, ant):
-    """
-    将GCS下的方位角和天顶角转换到对应天线的LCS坐标中
-
-    :param azimuth: GCS下的方位角，单位deg
-    :param zenith: GCS下的天顶角，单位deg
-    :param ant: LCS的原点天线
-    :return: LCS下的方位角和天顶角，单位deg
-    """
-    #  计算单位坐标
-    coordinate = np.array([np.cos(zenith / 180 * np.pi) * np.cos(azimuth / 180 * np.pi),
-                           np.cos(zenith / 180 * np.pi) * np.sin(azimuth / 180 * np.pi),
-                           np.sin(zenith / 180 * np.pi)
-                           ]).reshape([3, 1])
-    # 把这一点变换到LCS上:1. 绕y轴顺时针旋转90度;2. 绕x轴顺时针转ant_azimuth度；3.绕y轴逆时针转ant_elevation度
-    rotation1 = np.array([np.cos(np.pi / 2), 0, -np.sin(np.pi / 2),
-                          0, 1, 0,
-                          np.sin(np.pi / 2), 0, np.cos(np.pi / 2)
-                          ]).reshape([3, 3])
-    rotation2 = np.array([1, 0, 0,
-                          0, np.cos(ant.azimuth), np.sin(ant.azimuth),
-                          0, -np.sin(ant.azimuth), np.cos(ant.azimuth)
-                          ]).reshape([3, 3])
-    rotation3 = np.array([np.cos(ant.elevation), 0, np.sin(ant.elevation),
-                          0, 1, 0,
-                          -np.sin(ant.elevation), 0, np.cos(ant.elevation)
-                          ]).reshape([3, 3])
-    LCS_coordinate = rotation1 @ rotation2 @ rotation3 @ coordinate
-    # 计算LCS下的A和Z
-    if LCS_coordinate[0] > 0 and LCS_coordinate[1] > 0:
-        azimuth_LCS = np.arctan(LCS_coordinate[1] / LCS_coordinate[0]) / np.pi * 180
-    elif LCS_coordinate[0] < 0 < LCS_coordinate[1]:
-        azimuth_LCS = np.pi + np.arctan(LCS_coordinate[1] / LCS_coordinate[0]) / np.pi * 180
-    elif LCS_coordinate[0] < 0 and LCS_coordinate[1] < 0:
-        azimuth_LCS = np.pi + np.arctan(LCS_coordinate[1] / LCS_coordinate[0]) / np.pi * 180
-    elif LCS_coordinate[0] > 0 > LCS_coordinate[1]:
-        azimuth_LCS = 2 * np.pi + np.arctan(LCS_coordinate[1] / LCS_coordinate[0]) / np.pi * 180
-
-    # 转换为角度
-    elevation_LCS = np.arctan(
-        LCS_coordinate[2] / np.sqrt(LCS_coordinate[1] ** 2 + LCS_coordinate[0] ** 2)) / np.pi * 180
-    zenith_LCS = 90 - elevation_LCS
-
-    return azimuth_LCS[0], zenith_LCS[0]
+from utils import LCS_convert, calculate_LOS_angle
 
 
 def non_stationary_channel(
@@ -71,78 +26,55 @@ def non_stationary_channel(
     """
 
     # 0.确定LOS径的到达角和离开角。方位角(0,2pi),天顶角(0，pi)
-    vec = Tx_ant.position - Rx_ant.position
-    if vec[0] > 0 and vec[1] > 0:
-        LOS_AOA = np.arctan(vec[1] / vec[0]) / np.pi * 180
-        LOS_AOD = 180 + LOS_AOA
-    elif vec[0] < 0 < vec[1]:
-        LOS_AOA = np.pi + np.arctan(vec[1] / vec[0]) / np.pi * 180
-        LOS_AOD = 180 + LOS_AOA
-    elif vec[0] < 0 and vec[1] < 0:
-        LOS_AOA = np.pi + np.arctan(vec[1] / vec[0]) / np.pi * 180
-        LOS_AOD = LOS_AOA - 180
-    elif vec[0] > 0 > vec[1]:
-        LOS_AOA = 2 * np.pi + np.arctan(vec[1] / vec[0]) / np.pi * 180
-        LOS_AOD = LOS_AOA - 180
-
-    # 转换为角度
-    LOS_EOA = np.arctan(vec[2] / np.sqrt(vec[1] ** 2 + vec[0] ** 2)) / np.pi * 180
-    LOS_ZOA = 90 - LOS_EOA
-    LOS_ZOD = 180 - LOS_ZOA
+    LOS_angle = calculate_LOS_angle(Tx_ant, Rx_ant)
 
     # 1.计算该时刻大尺度衰落参数,单位log10(s),dB,log10(deg)，参考quadriga
-
-    # 天线对象时间演进
-    Tx_ant.evolve(time_instance)
-    Rx_ant.evolve(time_instance)
-    lsp = LSP.lsp_generate(Tx_ant, Rx_ant, fc)
+    lsp = generate_lsp(Tx_ant, Rx_ant, fc)
 
     # 2.生成所有簇的参数，参考38.901
-    cluster_num = 20
+    # 先生成初始时刻的簇集合，之后进行时间演进
+    cluster_number = 20
+    cluster_param = generate_cluster_param(lsp, cluster_number, LOS_angle)
 
-    # 生成簇时延
-    r_tau = 3
-    DS = 10 ** lsp['DS']
-    tau = -r_tau * DS * np.log(np.random.uniform(0, 1, [cluster_num, ]))
-    # 将时延排序
-    tau = np.sort(tau - np.min(tau))
+    # 3. 生成初始时刻的簇
+    cluster_set_init = generate_cluster(cluster_param)
 
-    # 考虑LOS径存在的情况
-    K = lsp['KF']
-    c_tau = 0.7705 - 0.0433 * K + 0.0002 * K ** 2 + 0.000017 * K ** 3
-    tau /= c_tau
+    # 在非初始时刻，需要考虑簇的生灭过程
+    # 以平稳时间为单位演进
+    if time_instance:
+        cluster_set_old = cluster_set_init
+        for t in range(time_instance):
+            # 更新天线位置
+            Tx_ant.evolve()
+            Rx_ant.evolve()
 
-    # 生成簇功率
-    power = np.exp(-tau * (r_tau - 1) / (r_tau * DS)) * np.power(10, -3 * np.random.randn(cluster_num) / 10)
-    # 将NLOS径的功率除以KR+1
-    KR = 10 ** (K / 10)
-    power = power / np.sum(power) / (KR + 1)
+            # 计算此刻的LOS径角度
+            LOS_angle = calculate_LOS_angle(Tx_ant, Rx_ant)
 
-    # 生成簇角度 参考38.901 Table 7.5-2
-    ASA = 10 ** lsp['ASA']
-    c_phi = 1.289 * (1.1035 - 0.028 * K - 0.002 * K ** 2 + 0.0001 * K ** 3)
-    AOA = 2 * (ASA / 1.4) * np.sqrt(-np.log(power / np.max(power))) / c_phi
-    AOA = ((np.random.uniform(-1, 1, cluster_num) * AOA + (ASA / 7) * np.random.randn(cluster_num))
-           - (np.random.uniform(-1, 1) * AOA[0] + np.random.randn() - LOS_AOA))
+            # 计算此刻大尺度衰落
+            lsp = generate_lsp(Tx_ant, Rx_ant, fc)
 
-    ASD = 10 ** lsp['ASD']
-    AOD = 2 * (ASD / 1.4) * np.sqrt(-np.log(power / np.max(power))) / c_phi
-    AOD = ((np.random.uniform(-1, 1, cluster_num) * AOD + (ASD / 7) * np.random.randn(cluster_num))
-           - (np.random.uniform(-1, 1) * AOD[0] + np.random.randn() - LOS_AOD))
+            # 计算该时刻新生簇数量
+            Tx_speed = np.sqrt(np.sum(Tx_ant.velocity ** 2))
+            Rx_speed = np.sqrt(np.sum(Rx_ant.velocity ** 2))
+            delta = 0.3 * Tx_speed * dt + Rx_speed * dt
+            cluster_number_new = round(lambda_G / lambda_R * (1 - np.exp(-lambda_R * delta / Ds)))
 
-    ZSA = 10 ** lsp['ESA']
-    c_theta = 1.178 * (1.3086 - 0.0339 * K - 0.0077 * K ** 2 + 0.0002 * K ** 3)
-    ZOA = - ZSA * np.log(power / np.max(power)) / c_theta
-    ZOA = ((np.random.uniform(-1, 1, cluster_num) * ZOA + (ZSA / 7) * np.random.randn(cluster_num))
-           - (np.random.uniform(-1, 1) * ZOA[0] + np.random.randn() - LOS_ZOA))
+            # 生成新簇
+            cluster_param_new = generate_cluster_param(lsp, cluster_number_new, LOS_angle)
+            cluster_set_new = generate_cluster(cluster_param_new)
 
-    ZSD = 10 ** lsp['ESD']
-    ZOD = - ZSD * np.log(power / np.max(power)) / c_theta
-    ZOD = ((np.random.uniform(-1, 1, cluster_num) * ZOD + (ZSD / 7) * np.random.randn(cluster_num))
-           - (np.random.uniform(-1, 1) * ZOD[0] + np.random.randn() - LOS_ZOA))
+            # 旧簇死亡
+            p_survival_time = np.exp(-lambda_R * Rx_speed / Dt)
+            for cluster in cluster_set_old:
+                if np.random.rand() > p_survival_time:
+                    cluster_set_old.remove(cluster)
 
-    # 3. 用参数生成簇
-    cluster_set = cluster_generate(tau, power, AOA, AOD, ZOA, ZOD, lsp['XPR'])
+            # 将两个簇集合合在一起
+            cluster_set = cluster_set_old + cluster_set_new
+
+    else:
+        cluster_set = cluster_set_init
 
     # 画出簇的时延功率谱
     delays = [i.delay for i in cluster_set]
@@ -163,6 +95,8 @@ def non_stationary_channel(
     # 计算小尺度衰落信道系数
 
     # 计算场量
+
+    LOS_AOA, LOS_AOD, LOS_ZOA, LOS_ZOD = LOS_angle
     # 将角度转换到天线为原点的坐标系上
     LOS_AOA_LCS, LOS_ZOA_LCS = LCS_convert(LOS_AOA, LOS_ZOA, Rx_ant)
 
@@ -179,6 +113,7 @@ def non_stationary_channel(
          np.cos(LOS_ZOD)]).reshape([3, 1])
 
     # 计算多普勒量
+    vec = Tx_ant.position - Rx_ant.position
     doppler_1 = np.exp(-1j * 2 * np.pi * (np.sqrt(np.sum(vec ** 2))) / (scipy.constants.c / fc))
     doppler_2 = np.exp(1j * 2 * np.pi * (r_rx_LOS.T @ Rx_ant.position) / (scipy.constants.c / fc))
     doppler_3 = np.exp(1j * 2 * np.pi * (r_tx_LOS.T @ Tx_ant.position) / (scipy.constants.c / fc))
@@ -219,7 +154,6 @@ def non_stationary_channel(
 
                 # 对于簇内的第m个子簇
                 for m in range(cluster.number):
-
                     #  1.用子簇的AOA和ZOA计算接收场量
                     ray_cAOA_LCS, ray_cZOA_LCS = LCS_convert(cluster.cAOA[m], cluster.cZOA[m], Rx_ant)
                     Rx_field = field(ray_cZOA_LCS, ray_cAOA_LCS, Rx_ant.slant)
@@ -237,10 +171,12 @@ def non_stationary_channel(
 
                     #  5.多普勒量
                     r_rx = np.array(
-                        [np.sin(cluster.cZOA[m]) * np.cos(cluster.cAOA[m]), np.sin(cluster.cZOA[m]) * np.sin(cluster.cAOA[m]),
+                        [np.sin(cluster.cZOA[m]) * np.cos(cluster.cAOA[m]),
+                         np.sin(cluster.cZOA[m]) * np.sin(cluster.cAOA[m]),
                          np.cos(cluster.cZOA[m])]).reshape([3, 1])
                     r_tx = np.array(
-                        [np.sin(cluster.cZOD[m]) * np.cos(cluster.cAOD[m]), np.sin(cluster.cZOD[m]) * np.sin(cluster.cAOD[m]),
+                        [np.sin(cluster.cZOD[m]) * np.cos(cluster.cAOD[m]),
+                         np.sin(cluster.cZOD[m]) * np.sin(cluster.cAOD[m]),
                          np.cos(cluster.cZOD[m])]).reshape([3, 1])
 
                     doppler_1 = np.exp(1j * 2 * np.pi * (r_rx.T @ Rx_ant.position) / (scipy.constants.c / fc))
@@ -270,6 +206,7 @@ def non_stationary_channel(
                 outputWaveform += hN * scipy.signal.lfilter(filter_coeff, 1, inputWaveform)
 
     # 计算完32x32个NLOS分量后，为信号添加LOS分量
+    KR = 10 ** (lsp['KF'] / 10)
     outputWaveform += np.sqrt(KR / (KR + 1)) * hL * inputWaveform
 
     # 返回输出波形

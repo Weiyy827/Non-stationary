@@ -15,10 +15,10 @@ qpsk = commpy.PSKModem(4)
 x = qpsk.modulate(bits)
 
 # 生成卫星
-Sat = scenario.Satellite(height=500e3, azimuth=0, elevation=90)
+Sat = scenario.Satellite(height=500e3, azimuth=45, elevation=45)
 
 # 经纬度和半径决定本地GCS的原点，latitude纬度，longitude经度
-Origin = scenario.Origin(latitude=90, longitude=0)
+Origin = scenario.Origin(latitude=45, longitude=45)
 
 # Rx天线设置
 Rx = scenario.Antenna(
@@ -46,7 +46,7 @@ Tx = scenario.Antenna(
 )
 
 # 过信道
-t = 0
+t = 1
 y = channel_model.non_stationary_channel(x, Tx, Rx, fc, t)
 
 # 存储信号文件
