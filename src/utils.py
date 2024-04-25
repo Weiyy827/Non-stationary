@@ -1,11 +1,13 @@
 import numpy as np
 
+from src.config import Re
+
 
 def db2pow(db):
     return 10 ** (db / 10)
 
 
-def LCS_convert(azimuth, zenith, ant):
+def gcs2lcs(azimuth, zenith, ant):
     """
     将GCS下的方位角和天顶角转换到对应天线的LCS坐标中
 
@@ -49,6 +51,32 @@ def LCS_convert(azimuth, zenith, ant):
     zenith_LCS = 90 - elevation_LCS
 
     return azimuth_LCS[0], zenith_LCS[0]
+
+
+def ecef2gcs(ecef, original):
+    azimuth, elevation = original
+    z = (azimuth - 90) * np.pi / 180  # z：z轴不动逆时针旋转经度-90
+    y = (90 - elevation) * np.pi / 180  # y: y轴不动顺时针时针旋转90-纬度
+    azimuth_rad = azimuth / 180 * np.pi
+    elevation_rad = elevation / 180 * np.pi
+
+    rotation = np.array(
+        [np.cos(z), np.sin(z), 0, -np.sin(z), np.cos(z), 0, 0, 0, 1]
+    ).reshape([3, 3]) @ np.array(
+        [np.cos(y), 0, -np.sin(y), 0, 1, 0, np.sin(y), 0, np.cos(y)]
+    ).reshape(
+        [3, 3]
+    )
+
+    ecef_original = np.array(
+        [
+            Re * np.cos(elevation_rad) * np.cos(azimuth_rad),
+            Re * np.cos(elevation_rad) * np.sin(azimuth_rad),
+            Re * np.sin(elevation_rad),
+        ]
+    )
+
+    return (rotation @ (ecef.reshape([3, 1]) - ecef_original.reshape([3, 1]))).reshape([3,])
 
 
 def calculate_LOS_angle(Tx_ant, Rx_ant):

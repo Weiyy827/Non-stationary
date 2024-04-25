@@ -3,47 +3,50 @@ import numpy as np
 import scipy
 
 from LSP import generate_lsp
+from cluster import generate_cluster_param, Cluster, plot_PDP
 from coeff_calculation import field, cross_polar
-import scenario
-from cluster import generate_cluster, generate_cluster_param
-from config import fs, lambda_G, lambda_R, Ds, Dt, dt
+from config import lambda_G, lambda_R, Ds, Dt, dt
 from evolution import cluster_evolution_Ant_plot, cluster_evolution_Ant
-from utils import LCS_convert, calculate_LOS_angle
+from simpar import Simulation_parameter
+from utils import calculate_LOS_angle, gcs2lcs
 
 
 def non_stationary_channel(
-        inputWaveform, Tx_ant: scenario.Antenna, Rx_ant: scenario.Antenna, fc, time_instance
+        simpar: Simulation_parameter
 ):
     """
-    将波形过信道
+    计算信道系数
 
-    :param inputWaveform: 输入波形
-    :param Tx_ant: 发送端天线对象
-    :param Rx_ant: 接收端天线
-    :param fc: 载波频率，单位为Hz
-    :param time_instance: 时刻单位
-    :return: 过信道后的波形
+    :param simpar：仿真场景参数
+    :return: 信道系数
     """
+    Tx_ant = simpar.tx
+    Rx_ant = simpar.rx
+    fc = simpar.fc
+    snapshots = simpar.snapshots
 
-    # 0.确定LOS径的到达角和离开角。方位角(0,2pi),天顶角(0，pi)
-    LOS_angle = calculate_LOS_angle(Tx_ant, Rx_ant)
+    # 每个快照时刻更新
+    for snapshot in range(snapshots):
+        # 0.确定该时刻LOS径的到达角和离开角。方位角(0,2pi),天顶角(0，pi)
+        LOS_angle = calculate_LOS_angle(Tx_ant, Rx_ant)
 
-    # 1.计算该时刻大尺度衰落参数,单位log10(s),dB,log10(deg)，参考quadriga
-    lsp = generate_lsp(Tx_ant, Rx_ant, fc)
+        # 1.计算该时刻大尺度衰落参数,单位log10(s),dB,log10(deg)，参考quadriga
+        lsp = generate_lsp(Tx_ant, Rx_ant, fc)
 
-    # 2.生成所有簇的参数，参考38.901
-    # 先生成初始时刻的簇集合，之后进行时间演进
-    cluster_number = 20
-    cluster_param = generate_cluster_param(lsp, cluster_number, LOS_angle)
+        # 2.生成所有簇的参数，参考38.901
+        cluster_number = 4
+        cluster_param = generate_cluster_param(lsp, cluster_number, LOS_angle)
+        cluster_set = []
+        for cluster_idx in range(cluster_number):
+            cluster_set.append(Cluster(lsp, cluster_param[cluster_idx]))
 
-    # 3. 生成初始时刻的簇
-    cluster_set_init = generate_cluster(cluster_param)
+        plot_PDP(cluster_set)
 
     # 在非初始时刻，需要考虑簇的生灭过程
     # 以平稳时间为单位演进
-    if time_instance:
-        cluster_set_old = cluster_set_init
-        for t in range(time_instance):
+    if snapshots:
+        cluster_set_old = cluster_set
+        for t in range(snapshots):
             # 更新天线位置
             Tx_ant.evolve()
             Rx_ant.evolve()
@@ -65,12 +68,12 @@ def non_stationary_channel(
             cluster_set_new = generate_cluster(cluster_param_new)
 
             # 旧簇死亡
-            p_survival_time = np.exp(-lambda_R * Rx_speed / Dt)
+            p_survival_time = np.exp(-lambda_R * Rx_speed * dt / Dt)
             for cluster in cluster_set_old:
                 if np.random.rand() > p_survival_time:
                     cluster_set_old.remove(cluster)
 
-            # 将两个簇集合合在一起
+            # 将两个簇集合合在一起，之后进行天线轴上的演进
             cluster_set = cluster_set_old + cluster_set_new
 
     else:
@@ -78,10 +81,10 @@ def non_stationary_channel(
 
     # 画出簇的时延功率谱
     delays = [i.delay for i in cluster_set]
-    powers = [i.power for i in cluster_set]
+    powers = [10 * np.log10(i.power) for i in cluster_set]
     plt.scatter(delays, powers)
-    plt.xlabel("Delay")
-    plt.ylabel("Power")
+    plt.xlabel("Delay[s]")
+    plt.ylabel("Power[dB]")
     plt.title("Power-Delay Profile")
     plt.show()
 
@@ -98,10 +101,10 @@ def non_stationary_channel(
 
     LOS_AOA, LOS_AOD, LOS_ZOA, LOS_ZOD = LOS_angle
     # 将角度转换到天线为原点的坐标系上
-    LOS_AOA_LCS, LOS_ZOA_LCS = LCS_convert(LOS_AOA, LOS_ZOA, Rx_ant)
+    LOS_AOA_LCS, LOS_ZOA_LCS = gcs2lcs(LOS_AOA, LOS_ZOA, Rx_ant)
 
     # 方法相同计算Tx天线为原点的LCS坐标
-    LOS_AOD_LCS, LOS_ZOD_LCS = LCS_convert(LOS_AOD, LOS_ZOD, Tx_ant)
+    LOS_AOD_LCS, LOS_ZOD_LCS = gcs2lcs(LOS_AOD, LOS_ZOD, Tx_ant)
 
     # 计算LOS径的三维方向矢量
     r_rx_LOS = np.array(
@@ -118,7 +121,7 @@ def non_stationary_channel(
     doppler_2 = np.exp(1j * 2 * np.pi * (r_rx_LOS.T @ Rx_ant.position) / (scipy.constants.c / fc))
     doppler_3 = np.exp(1j * 2 * np.pi * (r_tx_LOS.T @ Tx_ant.position) / (scipy.constants.c / fc))
     doppler_4 = np.exp(
-        1j * 2 * np.pi * (r_rx_LOS.T @ Rx_ant.velocity) / (scipy.constants.c / fc) * time_instance)
+        1j * 2 * np.pi * (r_rx_LOS.T @ Rx_ant.velocity) / (scipy.constants.c / fc) * snapshots)
 
     # 计算LOS径的信道系数,LOS径的时延设置为0
     hL = (
@@ -134,8 +137,6 @@ def non_stationary_channel(
     )
 
     # NLOS分量信道系数
-    # 储存输出波形
-    outputWaveform = np.zeros([1, len(inputWaveform)], dtype=complex)
 
     # 对于第i个接收阵元
     for i in range(Rx_ant.num):
@@ -155,7 +156,7 @@ def non_stationary_channel(
                 # 对于簇内的第m个子簇
                 for m in range(cluster.number):
                     #  1.用子簇的AOA和ZOA计算接收场量
-                    ray_cAOA_LCS, ray_cZOA_LCS = LCS_convert(cluster.cAOA[m], cluster.cZOA[m], Rx_ant)
+                    ray_cAOA_LCS, ray_cZOA_LCS = gcs2lcs(cluster.cAOA[m], cluster.cZOA[m], Rx_ant)
                     Rx_field = field(ray_cZOA_LCS, ray_cAOA_LCS, Rx_ant.slant)
 
                     #  2.交叉极化项
@@ -166,7 +167,7 @@ def non_stationary_channel(
                                         np.sin(108 / (fc ** 2)), np.cos(108 / (fc ** 2))]).reshape([2, 2])
 
                     #  4.发射场量
-                    ray_cAOD_LCS, ray_cZOD_LCS = LCS_convert(cluster.cAOD[m], cluster.cZOD[m], Rx_ant)
+                    ray_cAOD_LCS, ray_cZOD_LCS = gcs2lcs(cluster.cAOD[m], cluster.cZOD[m], Rx_ant)
                     Tx_field = field(ray_cZOD_LCS, ray_cAOD_LCS, Tx_ant.slant)
 
                     #  5.多普勒量
@@ -182,7 +183,7 @@ def non_stationary_channel(
                     doppler_1 = np.exp(1j * 2 * np.pi * (r_rx.T @ Rx_ant.position) / (scipy.constants.c / fc))
                     doppler_2 = np.exp(1j * 2 * np.pi * (r_tx.T @ Tx_ant.position) / (scipy.constants.c / fc))
                     doppler_3 = np.exp(
-                        1j * 2 * np.pi * (r_rx.T @ Rx_ant.velocity) / (scipy.constants.c / fc) * time_instance)
+                        1j * 2 * np.pi * (r_rx.T @ Rx_ant.velocity) / (scipy.constants.c / fc) * snapshots)
 
                     # 子簇的信道系数之和为这个簇的信道系数
                     hN += (
@@ -195,19 +196,5 @@ def non_stationary_channel(
                             * doppler_2
                             * doppler_3
                     )
-
-                # 这个簇的时延，转化成采样时延
-                delay = cluster.delay * fs
-
-                # 计算时延滤波器系数
-                filter_coeff = np.append(np.zeros(int(delay)), 1)
-
-                # 对信号进行时延处理，之后累加
-                outputWaveform += hN * scipy.signal.lfilter(filter_coeff, 1, inputWaveform)
-
-    # 计算完32x32个NLOS分量后，为信号添加LOS分量
-    KR = 10 ** (lsp['KF'] / 10)
-    outputWaveform += np.sqrt(KR / (KR + 1)) * hL * inputWaveform
-
     # 返回输出波形
     return outputWaveform

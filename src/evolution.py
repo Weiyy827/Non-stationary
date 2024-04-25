@@ -4,11 +4,12 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
-import scenario
 from config import lambda_R, Ds
 
+from simpar import Antenna
 
-def cluster_evolution_Ant(cluster_set, ant: scenario.Antenna):
+
+def cluster_evolution_Ant(cluster_set, ant: Antenna):
     """
     簇在天线轴上的演进
 
