@@ -1,12 +1,12 @@
 import copy
+import random
 
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
-from config import lambda_R, Ds
-
-from simpar import Antenna
+from src.config import lambda_R, Ds
+from src.simpar import Antenna
 
 
 def cluster_evolution_Ant(cluster_set, ant: Antenna):
@@ -17,20 +17,26 @@ def cluster_evolution_Ant(cluster_set, ant: Antenna):
     :param ant: 天线对象
     :return: 演进完后天线上所有阵元的簇集合
     """
-    if ant.ant_type == "ULA":
-        p_survival = np.exp(-lambda_R * ant.ant_spacing / Ds)
+    if len(cluster_set) < 10:
         ant_cluster = [cluster_set]
         for i in range(1, ant.num):
-            temp = copy.deepcopy(ant_cluster[i - 1])  # 复制列表到内存另一块
-            for j in temp:
-                if np.random.rand() < p_survival:
-                    pass
-                else:
-                    temp.remove(j)
+            temp = random.sample(cluster_set, random.randint(0, 3))
             ant_cluster.append(temp)
+    else:
+        if ant.ant_type == "ULA":
+            p_survival = np.exp(-lambda_R * ant.ant_spacing / Ds)
+            ant_cluster = [cluster_set]
+            for i in range(1, ant.num):
+                temp = copy.deepcopy(ant_cluster[i - 1])  # 复制列表到内存另一块
+                for j in temp:
+                    if np.random.rand() < p_survival:
+                        pass
+                    else:
+                        temp.remove(j)
+                ant_cluster.append(temp)
 
-    if ant.ant_type == "URA":
-        pass
+        if ant.ant_type == "URA":
+            pass
 
     return ant_cluster
 
@@ -51,7 +57,7 @@ def cluster_evolution_Ant_plot(cluster_set):
     plt.scatter(x_cord, y_cord)
     plt.xlabel("Antenna Index")
     plt.ylabel("Cluster")
-    plt.yticks(np.arange(20))
+    plt.yticks(np.arange(3))
     plt.title("t=0, Cluster Evolution on Antenna Axis")
     matplotlib.use("TkAgg")
     plt.show()

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import sqrtm
 
 
-def generate_lsp(Tx_ant, Rx_ant, fc):
+def generate_lsp_quadriga(Tx_ant, Rx_ant, fc):
     """
     生成大尺度衰落参数
 
@@ -14,6 +14,7 @@ def generate_lsp(Tx_ant, Rx_ant, fc):
     vec = Tx_ant.position - Rx_ant.position
     d2D = np.sqrt(vec[0] ** 2 + vec[1] ** 2)
     alpha_rad = np.arctan(vec[2] / d2D)
+    fc /= 1e9
 
     X = np.random.randn(8, 1)
     inter_corr = np.array([[1, -0.8, 0.2, 0.8, 0.8, 0.8, 0.8, 0],
