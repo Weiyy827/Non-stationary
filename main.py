@@ -1,4 +1,5 @@
 from scipy import constants
+from scipy.io import savemat
 
 from src.channel_model import non_stationary_channel
 from src.simpar import Simulation_parameter, Satellite, Antenna
@@ -12,7 +13,7 @@ simpar.sat = Satellite('lla', height=500e3, azimuth=0, elevation=90)
 original = [0, 90]
 
 simpar.rx = Antenna([0, 0, 1.5],
-                    [45, 45],
+                    [0, 90],
                     [0.5, 0, 0],
                     45,
                     Ant_type="ULA",
@@ -29,5 +30,5 @@ simpar.tx = Antenna(ecef2gcs(simpar.sat.ecef_coordinate, original),
 
 # 过信道
 simpar.snapshots = 1
-# simpar.visualize_scenario()
-y = non_stationary_channel(simpar)
+LOS_coeff, NLOS_coeff, Cluster_set = non_stationary_channel(simpar)
+savemat('channel_coeff.mat', {'LOS_coeff': LOS_coeff, 'NLOS_coeff': NLOS_coeff, 'Cluster_set': Cluster_set})

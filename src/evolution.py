@@ -9,18 +9,18 @@ from src.config import lambda_R, Ds
 from src.simpar import Antenna
 
 
-def cluster_evolution_Ant(cluster_set, ant: Antenna):
+def cluster_evolution_Ant(cluster_number, ant: Antenna):
     """
     簇在天线轴上的演进
 
-    :param cluster_set: 天线上所有阵元的簇集合
+    :param cluster_number: 簇数
     :param ant: 天线对象
     :return: 演进完后天线上所有阵元的簇集合
     """
-    if len(cluster_set) < 10:
-        ant_cluster = [cluster_set]
-        for i in range(1, ant.num):
-            temp = random.sample(cluster_set, random.randint(0, 3))
+    if cluster_number < 10:
+        ant_cluster = []
+        for i in range(ant.num):
+            temp = random.sample([i for i in range(cluster_number)], random.randint(0, 3))
             ant_cluster.append(temp)
     else:
         if ant.ant_type == "ULA":
@@ -52,7 +52,7 @@ def cluster_evolution_Ant_plot(cluster_set):
     for ant in cluster_set:
         for clusters in ant:
             x_cord.append(cluster_set.index(ant))
-            y_cord.append(clusters.idx)
+            y_cord.append(clusters)
 
     plt.scatter(x_cord, y_cord)
     plt.xlabel("Antenna Index")

@@ -21,8 +21,12 @@ class Cluster:
                        np.exp(-np.sqrt(2) * np.abs(delta_angel[:, 3]) / cESA))
 
         self.ray_power = cluster_param['power'] * delta_power / np.sum(delta_power)
-        self.ray_angle = [cluster_param['AOA'], cluster_param['AOD'], cluster_param['ZOA'],
-                          cluster_param['ZOD']] + delta_angel
+        self.ray_angle = []
+        for i in range(self.number):
+            self.ray_angle.append(
+                {'AOA': cluster_param['AOA'] + delta_angel[i][0], 'AOD': cluster_param['AOD'] + delta_angel[i][1],
+                 'ZOA': cluster_param['ZOA'] + delta_angel[i][2],
+                 'ZOD': cluster_param['ZOD'] + delta_angel[i][3]})
         self.kappa = lsp['XPR'] + 13.65 * np.random.randn(self.number)
         self.phase = np.random.uniform(-np.pi, np.pi, [self.number, 4])
 
