@@ -4,18 +4,23 @@ from src.config import Re
 from src.simpar import Antenna
 
 
-def db2pow(db):
+def db2pow(db) -> float:
+    """
+    将功率的dB值转换为线性值
+    :param db: 功率dB值
+    :return: 功率线性值
+    """
     return 10 ** (db / 10)
 
 
-def gcs2lcs(azimuth, zenith, ant: Antenna):
+def calc_delta_angel(azimuth, zenith, ant: Antenna) -> tuple[float, float]:
     """
-    将GCS下的方位角和天顶角转换到对应天线的LCS坐标中
+    计算传播路径与天线法向的垂直夹角与水平夹角
 
-    :param azimuth: GCS下的方位角，单位deg
-    :param zenith: GCS下的天顶角，单位deg
-    :param ant: LCS的原点天线
-    :return: LCS下的方位角和天顶角，单位deg
+    :param azimuth: 传播路径在GCS坐标系下的方位角，单位deg
+    :param zenith: 传播路径在GCS坐标系下的天顶角，单位deg
+    :param ant: 天线
+    :return: delta_az, delta_ze:与天线法向的水平夹角和垂直夹角，单位deg
     """
     # 计算向量
     vec = np.array([np.sin(zenith / 180 * np.pi) * np.cos(azimuth / 180 * np.pi),
@@ -36,7 +41,8 @@ def gcs2lcs(azimuth, zenith, ant: Antenna):
     xyz_rotated = rotate_z @ rotate_y @ xyz
     normal = xyz_rotated[:, 2]
     # 计算方向向量和x轴的垂直夹角和水平夹角
-    delta_ze = np.abs(90 - np.arccos(np.dot(vec, normal) / (np.linalg.norm(vec) * np.linalg.norm(normal))) / np.pi * 180)
+    delta_ze = np.abs(
+        90 - np.arccos(np.dot(vec, normal) / (np.linalg.norm(vec) * np.linalg.norm(normal))) / np.pi * 180)
     vec_projection = vec - np.dot(np.dot(vec, normal), normal)
     delta_az = np.arccos(np.dot(vec_projection, xyz_rotated[:, 0]) / (
             np.linalg.norm(vec_projection) * np.linalg.norm(xyz_rotated[:, 0]))) / np.pi * 180
@@ -44,7 +50,14 @@ def gcs2lcs(azimuth, zenith, ant: Antenna):
     return delta_az, delta_ze
 
 
-def ecef2gcs(ecef, original):
+def ecef2gcs(ecef, original) -> list[float]:
+    """
+    将ecef坐标转换到GCS坐标
+
+    :param ecef: ecef坐标系下的坐标，单位m
+    :param original: GCS坐标系原点在ecef坐标系下的方位角和仰角，单位deg
+    :return:
+    """
     azimuth, elevation = original
     z = (azimuth - 90) * np.pi / 180  # z：z轴不动逆时针旋转经度-90
     y = (90 - elevation) * np.pi / 180  # y: y轴不动顺时针时针旋转90-纬度
@@ -70,7 +83,7 @@ def ecef2gcs(ecef, original):
     return (rotation @ (ecef.reshape([3, 1]) - ecef_original.reshape([3, 1]))).reshape([3, ])
 
 
-def calculate_LOS_angle(Tx_ant, Rx_ant):
+def calculate_LOS_angle(Tx_ant, Rx_ant) -> list[float]:
     """
     计算LOS径的到达离开角
     :param Tx_ant: 发射天线对象

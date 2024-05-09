@@ -10,12 +10,14 @@ from src.simpar import Antenna
 
 
 def cluster_evolution_Ant(cluster_number, ant: Antenna):
-    """
-    簇在天线轴上的演进
+    """簇在天线轴上的演进
 
-    :param cluster_number: 簇数
-    :param ant: 天线对象
-    :return: 演进完后天线上所有阵元的簇集合
+    Args:
+        cluster_number (int): 簇数
+        ant (Antenna): 目标天线
+
+    Returns:
+        list[list[Cluster]]: 演进完后天线上所有阵元的簇集合
     """
     if cluster_number < 10:
         ant_cluster = []
@@ -36,16 +38,27 @@ def cluster_evolution_Ant(cluster_number, ant: Antenna):
                 ant_cluster.append(temp)
 
         if ant.ant_type == "URA":
+            # TODO 完成URA在天线轴上的演进
             pass
 
     return ant_cluster
 
 
 def cluster_evolution_Time():
+    """簇在时间轴上的演进
+
+    Returns:
+        _type_: _description_
+    """
     return None
 
 
 def cluster_evolution_Ant_plot(cluster_set):
+    """画出簇在天线轴上的演进图
+
+    Args:
+        cluster_set (list[list[Cluster]]): 演进后天线上可视的簇集合
+    """
     # 画出初始时刻簇在天线轴上的演进
     x_cord = []
     y_cord = []

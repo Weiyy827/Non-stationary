@@ -4,18 +4,21 @@ from scipy.linalg import sqrtm
 
 def generate_lsp_quadriga(Tx_ant, Rx_ant, fc):
     """
-    生成大尺度衰落参数
+    根据Quadriga_Documentary中的方式生成大尺度衰落参数
 
     :param Tx_ant: 发射天线对象
     :param Rx_ant: 接收天线对象
     :param fc: 载波频率
     :return: 包含大尺度衰落参数的字典，包括DS,KF,SF,ASD,ASA,ESD,ESA,XPR
     """
+
+    # 1.计算rx和tx之间的参数
     vec = Tx_ant.position - Rx_ant.position
     d2D = np.sqrt(vec[0] ** 2 + vec[1] ** 2)
     alpha_rad = np.arctan(vec[2] / d2D)
     fc /= 1e9
 
+    # 2.
     X = np.random.randn(8, 1)
     inter_corr = np.array([[1, -0.8, 0.2, 0.8, 0.8, 0.8, 0.8, 0],
                            [-0.8, 1, -0.3, -0.8, -0.8, -0.8, -0.8, 0],
